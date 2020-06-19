@@ -1,6 +1,8 @@
 package com.samuelford48gmail.bakingapp;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -18,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.exoplayer2.upstream.DataSource;
@@ -36,8 +39,11 @@ import org.json.JSONException;
 public class StepDetailFragment extends Fragment {
     RecyclerView recyclerView;
     Recipe recipe;
-
-
+    PlayerView playerView;
+    int position, size;
+    Button previous, next;
+    SimpleExoPlayer player;
+    TextView textView;
 
     public static final String ARG_ITEM_ID = "item_id";
 
@@ -76,213 +82,133 @@ public class StepDetailFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.step_detail, container, false);
-        // Show the dummy content as text in a TextView.
-        recyclerView = rootView.findViewById(R.id.step_detailRV);
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
-        recyclerView.setLayoutManager(linearLayoutManager);
 
+
+        playerView = rootView.findViewById(R.id.exoPlayer);
+        textView = rootView.findViewById(R.id.stepDescription);
         Bundle bundle = getArguments();
-
+        previous = rootView.findViewById(R.id.previous);
+        next = rootView.findViewById(R.id.next);
+        player = new SimpleExoPlayer.Builder(getContext()).build();
+        if (savedInstanceState != null) {
+            int orientation = getResources().getConfiguration().orientation;
+            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                textView.setVisibility(View.INVISIBLE);
+                next.setVisibility(View.INVISIBLE);
+                previous.setVisibility(View.INVISIBLE);
+            } else {
+                textView.setVisibility(View.VISIBLE);
+                next.setVisibility(View.VISIBLE);
+                previous.setVisibility(View.VISIBLE);
+            }
+            checkbuttonVisibility();
+            recipe = savedInstanceState.getParcelable("Recipe");
+            size = savedInstanceState.getInt("Size");
+            position = savedInstanceState.getInt("Position");
+            loadVideo();
+            try {
+                loadStepDescription();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
 
         recipe = bundle.getParcelable("Recipe");
+        position = bundle.getInt("Position") - 1;
+        int orientation = getResources().getConfiguration().orientation;
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            textView.setVisibility(View.INVISIBLE);
+            next.setVisibility(View.INVISIBLE);
+            previous.setVisibility(View.INVISIBLE);
+        }
+        try {
+            size = RecipeUtils.getStepsSize(recipe.getSteps());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        checkbuttonVisibility();
+        try {
+            loadStepDescription();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        loadVideo();
+        next.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                position++;
 
-        recyclerView.setAdapter(new StepDetailAdapter(this, recipe));
+                checkbuttonVisibility();
+                loadVideo();
+                try {
+                    loadStepDescription();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        previous.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                position--;
+                checkbuttonVisibility();
+                loadVideo();
+                try {
+                    loadStepDescription();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+
         return rootView;
     }
 
-    public static class StepDetailAdapter
-            extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-        private static int TYPE_VIDEO = 0;
-        private static int TYPE_STEP_DESCRIPTION = 1;
-        private final StepDetailFragment mParentActivity;
-        public Recipe recipe;
 
-        /*
-                private final View.OnClickListener mOnClickListener = new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        DummyContent.DummyItem item = (DummyContent.DummyItem) view.getTag();
-                        if (mTwoPane) {
-                            Bundle arguments = new Bundle();
-                            arguments.putString(StepDetailFragment.ARG_ITEM_ID, item.id);
-                            StepDetailFragment fragment = new StepDetailFragment();
-                            fragment.setArguments(arguments);
-                            mParentActivity.getSupportFragmentManager().beginTransaction()
-                                    .replace(R.id.step_detail_container, fragment)
-                                    .commit();
-                        } else {
+    private void loadStepDescription() throws JSONException {
+        textView.setText(RecipeUtils.getStepsDescription(recipe.getSteps(), position));
+    }
 
-                            Context context = view.getContext();
-                            Intent intent = new Intent(context, StepDetailActivity.class);
-                            intent.putExtra(StepDetailFragment.ARG_ITEM_ID, item.id);
-
-                            context.startActivity(intent);
-                        }
-                    }
-                };
-        */
-        StepDetailAdapter(StepDetailFragment parent,
-                          Recipe recipe) {
-            this.recipe = recipe;
-            mParentActivity = parent;
-
-        }
-
-        @Override
-        public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            int layoutId;
-
-            if (viewType == TYPE_VIDEO) {
-                layoutId = R.layout.video_list_item;
-                View view = LayoutInflater.from(parent.getContext()).inflate(layoutId, parent, false);
-
-                view.setFocusable(true);
-
-                return new VideoViewHolder(view);
-            } else {
-                layoutId = R.layout.step_list_content;
-                View view = LayoutInflater.from(parent.getContext()).inflate(layoutId, parent, false);
-                view.setFocusable(true);
-                return new StepViewHolder(view);
-            }
-
-
-            // View view = LayoutInflater.from(parent.getContext())
-            //      .inflate(R.layout.step_list_content, parent, false);
-
-        }
-
-       // @Override
-        //public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-       //     ((StepViewHolder) holder).description.setText("sdf");
-       // }
-
-        @Override
-        public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
-
-            final Context context = holder.itemView.getContext();
-            if (getItemViewType(position) == TYPE_VIDEO) {
-                SimpleExoPlayer player = new SimpleExoPlayer.Builder(holder.itemView.getContext()).build();
-                Uri uri = null;
-
-                try {
-                    uri = RecipeUtils.getVideoURI(recipe.getSteps(),position);
-
-                    if (uri==null){
-                        return;
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                ((VideoViewHolder) holder).playerView.setPlayer(player);
-                DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context,
-                        Util.getUserAgent(context, context.getApplicationInfo().loadLabel(context.getPackageManager()).toString()));
+    private void loadVideo() {
+        playerView.setPlayer(player);
+        DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(getContext(),
+                Util.getUserAgent(getContext(), getContext().getApplicationInfo().loadLabel(getContext().getPackageManager()).toString()));
 // This is the MediaSource representing the media to be played.
-                MediaSource videoSource =
-                        new ProgressiveMediaSource.Factory(dataSourceFactory)
-                                .createMediaSource(uri);
+        MediaSource videoSource =
+                null;
+        try {
+            videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
+                    .createMediaSource(RecipeUtils.getVideoURI(recipe.getSteps(), position));
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
 // Prepare the player with the source.
-                player.prepare(videoSource);
+        player.prepare(videoSource);
+    }
 
-            } else {
-                try {
-                    ((StepViewHolder) holder).description.setText(RecipeUtils.getStepsDescription(recipe.getSteps(), position));;
+    private void checkbuttonVisibility() {
+        int orientation = getResources().getConfiguration().orientation;
 
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    ((StepViewHolder) holder).title.setText(RecipeUtils.getStepsTitle(recipe.getSteps(), position));
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }/*if (mTwoPane) {
-                if (position>=1){
-                    holder.itemView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            Bundle argument = new Bundle();
-                            // Intent intent = new Intent(context,StepDetailActivity.class);
-                            argument.putParcelable("Recipe",recipe);
-                            argument.putInt("Position", position);
-                            StepDetailFragment fragment = new StepDetailFragment();
-                            fragment.setArguments(argument);
-                            mParentActivity.getSupportFragmentManager().beginTransaction()
-                                    .replace(R.id.step_detail_container, fragment)
-                                    .commit();
-                        }
-
-                    });
-                    //   StepDetailFragment fragment = new StepDetailFragment();
-                    //fragment.setArguments(arguments);
-                    // mParentActivity.getSupportFragmentManager().beginTransaction()
-                    //       .replace(R.id.step_detail_container, fragment)
-                    //       .commit();
-                }
-                // Bundle arguments = new Bundle();
-                // arguments.putString(StepDetailFragment.ARG_ITEM_ID, item.id);
-
-            } else {
-
-                if (position>=1){
-                    holder.itemView.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
-                            Intent intent = new Intent(context, StepDetailActivity.class);
-                            intent.putExtra("position", position);
-                            intent.putExtra("Recipe",recipe);
-
-                            context.startActivity(intent);
-                        }
-                    });
-                    }
-                    }
-                    */
-
-
-        }
-
-        @Override
-        public int getItemViewType(int position) {
-//      COMPLETED (10) Within getItemViewtype, if mUseTodayLayout is true and position is 0, return the ID for today viewType
+        if (orientation != Configuration.ORIENTATION_LANDSCAPE) {
             if (position == 0) {
-                return TYPE_VIDEO;
-//      COMPLETED (11) Otherwise, return the ID for future day viewType
+                previous.setVisibility(View.INVISIBLE);
             } else {
-                return TYPE_VIDEO;
+                previous.setVisibility(View.VISIBLE);
+            }
+            if (position == (size - 1)) {
+                next.setVisibility(View.INVISIBLE);
+            } else {
+                next.setVisibility(View.VISIBLE);
             }
         }
+    }
 
-
-        @Override
-        public int getItemCount() {
-
-            return 1;
-        }
-
-        class StepViewHolder extends RecyclerView.ViewHolder {
-            final TextView description, title;
-
-
-            StepViewHolder(View view) {
-                super(view);
-
-                description = view.findViewById(R.id.content);
-                title = view.findViewById(R.id.title);
-            }
-        }
-
-        class VideoViewHolder extends RecyclerView.ViewHolder {
-
-          public   PlayerView playerView;
-
-            VideoViewHolder(@NonNull View itemView) {
-                super(itemView);
-                playerView = itemView.findViewById(R.id.exoPlayer);
-            }
-        }
-
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putInt("SIZE", size);
+        savedInstanceState.putInt("POSITION", position);
+        savedInstanceState.putParcelable("Recipe", recipe);
     }
 }

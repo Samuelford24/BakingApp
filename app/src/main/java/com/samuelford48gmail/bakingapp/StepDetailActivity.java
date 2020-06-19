@@ -31,9 +31,10 @@ int position;
 
         Intent intent =getIntent();
         recipe =intent.getParcelableExtra("Recipe");
-        System.out.println("StepDetail" + recipe.servings);
-        position=intent.getIntExtra("position", 0);
-        System.out.println("Postion" + position);
+
+        position = intent.getIntExtra("Position", 0);
+        System.out.println("POsition StepDetailAct" + position);
+
 /*
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -73,6 +74,7 @@ int position;
           StepDetailFragment fragment = new StepDetailFragment();
           Bundle arguments=new Bundle();
           arguments.putParcelable("Recipe",recipe);
+            arguments.putInt("Position", position);
           fragment.setArguments(arguments);
           getSupportFragmentManager().beginTransaction().add(R.id.step_detail_container,fragment).commit();
         }

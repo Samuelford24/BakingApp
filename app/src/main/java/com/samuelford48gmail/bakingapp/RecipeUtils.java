@@ -12,6 +12,18 @@ import java.net.URI;
 import java.util.ArrayList;
 
 public class RecipeUtils {
+    public static ArrayList<String> getRecipeNames(String response) throws JSONException {
+        ArrayList<String> recipeNames = new ArrayList<>();
+        JSONArray jsonArray = new JSONArray(response);
+        for (int i = 0; i < jsonArray.length(); i++) {
+
+            JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+            recipeNames.add(jsonObject.getString("name"));
+        }
+        return recipeNames;
+    }
+
     public static ArrayList<Recipe> getRecipes(String response) throws JSONException {
         ArrayList<Recipe> recipes = new ArrayList<>();
         JSONArray jsonArray = new JSONArray(response);
@@ -23,17 +35,28 @@ public class RecipeUtils {
         }
         return recipes;
     }
+
     public static String getIngredients(String ingredientsArray) throws JSONException {
-       String ingredients="";
+        String ingredients="";
         JSONArray jsonArray =new JSONArray(ingredientsArray);
-        for (int j=1;j<jsonArray.length()+1;j++) {
+        for (int j = 1; j<jsonArray.length()+1; j++) {
             JSONObject jsonObject = jsonArray.getJSONObject(j-1);
-            ingredients+= String.valueOf(j) +". " +jsonObject.getString("quantity") +jsonObject.getString("measure") + " " + jsonObject.getString("ingredient")+"\n";
+            ingredients += j + ". " + jsonObject.getString("quantity") + jsonObject.getString("measure") + " " + jsonObject.getString("ingredient") + "\n";
         }
         return ingredients;
     }
+
+    public static String getIngredientsForWidget(String ingredientsArray) throws JSONException {
+        String ingredients = "";
+        JSONArray jsonArray = new JSONArray(ingredientsArray);
+        for (int j = 1; j < jsonArray.length() + 1; j++) {
+            JSONObject jsonObject = jsonArray.getJSONObject(j - 1);
+            ingredients += j + ". " + jsonObject.getString("quantity") + jsonObject.getString("measure") + " " + jsonObject.getString("ingredient") + ",";
+        }
+        System.out.println("ingredients" + ingredients);
+        return ingredients;
+    }
     public static int getStepsSize(String stepsArray) throws JSONException{
-        System.out.println(stepsArray);
 
 
         JSONArray jsonArray = new JSONArray(stepsArray);

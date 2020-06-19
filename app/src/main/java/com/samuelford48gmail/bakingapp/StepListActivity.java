@@ -50,7 +50,7 @@ public class StepListActivity extends AppCompatActivity {
 
  Intent intent = getIntent();
         Recipe recipe = intent.getParcelableExtra("Recipe");
-System.out.println("StepList" + recipe.getServings());
+
         ActionBar actionBar = this.getSupportActionBar();
 
         if (actionBar != null && recipe!=null) {
@@ -185,7 +185,7 @@ System.out.println("StepList" + recipe.getServings());
                         @Override
                         public void onClick(View view) {
                             Intent intent = new Intent(context, StepDetailActivity.class);
-                            intent.putExtra("position", position);
+                            intent.putExtra("Position", position);
                             intent.putExtra("Recipe",recipe);
 
                             context.startActivity(intent);
