@@ -81,8 +81,10 @@ holder.itemView.setOnClickListener(new View.OnClickListener() {
         }
     }
     public void setRecipes(ArrayList<Recipe> recipes) {
-        this.recipes = recipes;
-        notifyDataSetChanged();
+        if (recipes != null) {
+            this.recipes = recipes;
+            notifyDataSetChanged();
+        }
     }
 
     @Override
