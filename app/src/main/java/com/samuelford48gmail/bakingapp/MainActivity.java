@@ -20,6 +20,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 public class MainActivity extends AppCompatActivity {
+    public static boolean backgroudWorkDone = false;
     private RecyclerView recyclerView;
     public RecipeAdapter recipeAdapter;
     ProgressBar pb;
@@ -49,6 +50,7 @@ final static String url="https://d17h27t6h515a5.cloudfront.net/topher/2017/May/5
 
 recipeAdapter.setRecipes(RecipeUtils.getRecipes(response));
 pb.setVisibility(View.INVISIBLE);
+                                backgroudWorkDone = true;
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
